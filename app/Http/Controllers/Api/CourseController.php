@@ -28,12 +28,29 @@ class CourseController extends Controller
         );
     }
 
+    /**
+     * Teacher-specific list of courses owned by authenticated teacher.
+     */
+    public function teacherIndex(Request $request)
+    {
+        $user = $request->user();
+
+        $courses = Course::where('user_id', $user->id)->with('teacher')->latest()->paginate(10);
+
+        return $this->paginatedResponse(
+            $courses,
+            CourseResource::collection($courses),
+            'Teacher courses fetched successfully'
+        );
+    }
+
     public function store(StoreCourseRequest $request)
     {
         $course = Course::create([
             'title' => $request->title,
             'description' => $request->description,
             'price' => $request->price,
+            'thumbnail' => $request->thumbnail ?? null,
             'status' => $request->status,
             'user_id' => $request->user()->id,
         ]);
@@ -89,6 +106,7 @@ class CourseController extends Controller
             'title' => $request->title,
             'description' => $request->description,
             'price' => $request->price,
+            'thumbnail' => $request->thumbnail ?? $course->thumbnail,
             'status' => $request->status,
         ]);
 

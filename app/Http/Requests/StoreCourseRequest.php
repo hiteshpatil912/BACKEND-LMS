@@ -14,6 +14,7 @@ class StoreCourseRequest extends ApiFormRequest
         return [
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
+            'thumbnail' => 'nullable|string',
             'price' => 'required|numeric',
             'status' => 'required|in:draft,published',
         ];
