@@ -74,11 +74,9 @@ public function studentAttempt(Request $request, int $id)
         if (!$this->isEnrolledInCourse($request->user(), $quiz->lesson->course_id)) {
             return $this->forbiddenResponse();
         }
+        $result = $this->evaluateQuiz($quiz, $request->answers ?? []);
 
-        return $this->successResponse([
-            'score' => rand(60, 100),
-            'status' => 'passed',
-        ], 'Quiz Submitted Successfully');
+        return $this->successResponse($result, 'Quiz Submitted Successfully');
     }
 
     public function studentResult(Request $request, int $id)
@@ -92,12 +90,12 @@ public function studentAttempt(Request $request, int $id)
         if (!$this->isEnrolledInCourse($request->user(), $quiz->lesson->course_id)) {
             return $this->forbiddenResponse();
         }
+        // Try to get answers from the request (if provided via query or payload).
+        $answers = $request->input('answers', null);
 
-        return $this->successResponse([
-            'quiz_id' => $quiz->id,
-            'score' => rand(60, 100),
-            'status' => 'passed',
-        ], 'Quiz result fetched successfully');
+        $result = $this->evaluateQuiz($quiz, is_array($answers) ? $answers : null);
+
+        return $this->successResponse($result, 'Quiz result fetched successfully');
     }
 
     public function submit(SubmitQuizRequest $request, int $id)
@@ -112,33 +110,53 @@ public function studentAttempt(Request $request, int $id)
         if (!$this->isEnrolledInCourse($request->user(), $quiz->lesson->course_id)) {
             return $this->forbiddenResponse();
         }
+        $result = $this->evaluateQuiz($quiz, $request->answers ?? []);
 
-        $questions = Question::where('quiz_id', $id)->get();
-        $answers = $request->answers ?? [];
-        $score = 0;
+        return $this->successResponse($result, 'Quiz submitted successfully');
+    }
 
+    /**
+     * Evaluate quiz and return standardized result structure.
+     * If $answers is null, generate a fallback random percentage (preserves previous behavior).
+     *
+     * @param Quiz $quiz
+     * @param array|null $answers
+     * @return array
+     */
+    private function evaluateQuiz(Quiz $quiz, ?array $answers = null): array
+    {
+        $questions = Question::where('quiz_id', $quiz->id)->get();
+        $total = $questions->count();
+
+        if ($answers === null) {
+            // Fallback: preserve previous random behavior but include full fields
+            $percentage = rand(60, 100);
+            $correct = $total > 0 ? (int) round(($percentage / 100) * $total) : 0;
+
+            return [
+                'quiz_id' => $quiz->id,
+                'total_questions' => $total,
+                'correct_answers' => $correct,
+                'score_percentage' => $percentage,
+                'status' => 'passed',
+            ];
+        }
+
+        $correct = 0;
         foreach ($questions as $question) {
-    //          dump([
-    //     'question_id' => $question->id,
-    //     'received' => $answers[$question->id] ?? null,
-    //     'correct' => $question->correct_answer,
-    //     'match' => ($answers[$question->id] ?? null) === $question->correct_answer,
-    // ]);
-            if (
-                isset($answers[$question->id]) &&
-                $answers[$question->id] === $question->correct_answer
-            ) {
-                $score++;
+            if (isset($answers[$question->id]) && $answers[$question->id] === $question->correct_answer) {
+                $correct++;
             }
         }
 
-        return $this->successResponse([
-            'quiz_id' => $id,
-            'total_questions' => $questions->count(),
-            'correct_answers' => $score,
-            'score_percentage' => $questions->count() > 0
-                ? round(($score / $questions->count()) * 100)
-                : 0,
-        ], 'Quiz submitted successfully');
+        $percentage = $total > 0 ? (int) round(($correct / $total) * 100) : 0;
+
+        return [
+            'quiz_id' => $quiz->id,
+            'total_questions' => $total,
+            'correct_answers' => $correct,
+            'score_percentage' => $percentage,
+            'status' => 'passed',
+        ];
     }
 }
