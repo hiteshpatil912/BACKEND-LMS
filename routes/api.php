@@ -58,6 +58,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/upload-video', 'video');
     });
 
+    // Notifications available to any authenticated user
+    Route::controller(NotificationController::class)->group(function () {
+        Route::get('/my-notifications', 'myNotifications');
+        Route::put('/notifications/{id}/read', 'markAsRead');
+    });
+
     Route::controller(CourseController::class)->group(function () {
         Route::get('/courses', 'index');
         Route::get('/courses/{id}', 'show');
@@ -156,10 +162,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/my-wishlist', 'myWishlist');
         });
 
-        Route::controller(NotificationController::class)->group(function () {
-            Route::get('/my-notifications', 'myNotifications');
-            Route::put('/notifications/{id}/read', 'markAsRead');
-        });
+        
 
         Route::prefix('student')->controller(StudentController::class)->group(function () {
             Route::get('/dashboard', 'dashboard');
