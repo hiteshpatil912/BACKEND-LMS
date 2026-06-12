@@ -5,13 +5,17 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Course;
 
-class Resource extends Model
+class Announcement extends Model
 {
     protected $fillable = [
         'course_id',
         'title',
-        'description',
-        'file_url'
+        'body',
+        'published_at',
+    ];
+
+    protected $dates = [
+        'published_at',
     ];
 
     public function course()

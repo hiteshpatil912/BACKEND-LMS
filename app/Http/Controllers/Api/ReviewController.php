@@ -9,6 +9,7 @@ use App\Http\Resources\ReviewResource;
 use App\Models\Course;
 use App\Models\Review;
 use App\Traits\ApiResponse;
+use Illuminate\Http\Request;
 
 class ReviewController extends Controller
 {
@@ -85,5 +86,31 @@ class ReviewController extends Controller
                 'total_reviews' => $reviews->total(),
             ]
         );
+    }
+
+    /**
+     * Reviews for all courses owned by the authenticated teacher.
+     */
+    public function teacherReviews(Request $request)
+    {
+        $user = $request->user();
+
+        $reviews = Review::whereHas('course', function ($q) use ($user) {
+            $q->where('user_id', $user->id);
+        })->with('user', 'course')->latest()->get();
+
+        $data = $reviews->map(function ($r) {
+            return [
+                'review_id' => $r->id,
+                'course_id' => $r->course_id,
+                'course_title' => $r->course->title ?? null,
+                'student_name' => $r->user->name ?? null,
+                'rating' => $r->rating,
+                'comment' => $r->review,
+                'created_at' => $r->created_at,
+            ];
+        })->values();
+
+        return $this->successResponse($data, 'Teacher reviews fetched successfully');
     }
 }

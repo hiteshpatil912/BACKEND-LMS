@@ -9,10 +9,12 @@ use App\Models\Quiz;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Http\Controllers\Concerns\AuthorizesLmsContent;
 
 class AnalyticsController extends Controller
 {
     use ApiResponse;
+    use AuthorizesLmsContent;
 
     public function index(Request $request)
     {
@@ -43,5 +45,39 @@ class AnalyticsController extends Controller
             'total_lessons' => $totalLessons,
             'total_quizzes' => $totalQuizzes,
         ], 'Teacher analytics fetched successfully');
+    }
+
+    /**
+     * Course-specific analytics for a teacher-owned course.
+     */
+    public function courseStats(Request $request, int $id)
+    {
+        $course = Course::find($id);
+
+        if (!$course) {
+            return $this->errorResponse('Course Not Found', 404);
+        }
+
+        if (!$this->ownsCourse($request->user(), $course)) {
+            return $this->forbiddenResponse();
+        }
+
+        $totalStudents = DB::table('course_user')
+            ->where('course_id', $course->id)
+            ->distinct()
+            ->count('user_id');
+
+        $totalLessons = $course->lessons()->count();
+
+        $totalQuizzes = Quiz::whereHas('lesson', function ($q) use ($course) {
+            $q->where('course_id', $course->id);
+        })->count();
+
+        return $this->successResponse([
+            'course_id' => $course->id,
+            'total_students' => $totalStudents,
+            'total_lessons' => $totalLessons,
+            'total_quizzes' => $totalQuizzes,
+        ], 'Course analytics fetched successfully');
     }
 }

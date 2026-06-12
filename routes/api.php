@@ -5,6 +5,12 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\QuizController;
 use App\Http\Controllers\Api\Teacher\DashboardController;
 use App\Http\Controllers\Api\Teacher\AnalyticsController;
+use App\Http\Controllers\Api\Teacher\StudentController as TeacherStudentController;
+use App\Http\Controllers\Api\Teacher\EarningsController;
+use App\Http\Controllers\Api\Teacher\ResourceController as TeacherResourceController;
+use App\Http\Controllers\Api\Teacher\AnnouncementController;
+use App\Http\Controllers\Api\Teacher\AssignmentController;
+use App\Http\Controllers\Api\Teacher\DiscussionController as TeacherDiscussionController;
 use App\Http\Controllers\Api\CertificateController;
 use App\Http\Controllers\Api\ChatController;
 use App\Http\Controllers\Api\CourseController;
@@ -99,6 +105,14 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::delete('/courses/{id}', 'destroy');
         });
 
+
+    Route::get('/teacher/chat', [ChatController::class, 'teacherIndex']);
+    Route::post('/teacher/chat', [ChatController::class, 'teacherStore']);
+
+
+        // Compatibility: teacher-prefixed route for enrolled students
+        Route::get('/teacher/courses/{id}/students', [CourseController::class, 'enrolledStudents']);
+
         Route::controller(LessonController::class)->group(function () {
             Route::post('/lessons', 'store');
             Route::put('/lessons/{id}', 'update');
@@ -112,14 +126,61 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('/quizzes', 'store');
         });
 
+        // Teacher quiz management
+        Route::get('/teacher/quizzes/{id}', [QuizController::class, 'show']);
+        Route::put('/teacher/quizzes/{id}', [QuizController::class, 'update']);
+        Route::delete('/teacher/quizzes/{id}', [QuizController::class, 'destroy']);
+
+        // Teacher lesson quizzes (list and create)
+        Route::get('/teacher/lessons/{lessonId}/quizzes', [QuizController::class, 'quizzesByLesson']);
+        Route::post('/teacher/lessons/{lessonId}/quizzes', [QuizController::class, 'storeForLesson']);
+
         Route::controller(QuestionController::class)->group(function () {
             Route::post('/questions', 'store');
         });
 
-        // Teacher frontend expects these two endpoints
+        // Teacher quiz questions CRUD
+        Route::get('/teacher/quizzes/{quizId}/questions', [QuestionController::class, 'teacherQuizQuestions']);
+        Route::post('/teacher/quizzes/{quizId}/questions', [QuestionController::class, 'storeForQuiz']);
+        Route::get('/teacher/questions/{id}', [QuestionController::class, 'teacherShow']);
+        Route::put('/teacher/questions/{id}', [QuestionController::class, 'teacherUpdate']);
+        Route::delete('/teacher/questions/{id}', [QuestionController::class, 'teacherDestroy']);
+
+        // Teacher frontend expects these endpoints
         Route::get('/teacher/dashboard', [DashboardController::class, 'index']);
         Route::get('/teacher/courses', [CourseController::class, 'teacherIndex']);
+        Route::get('/teacher/reviews', [\App\Http\Controllers\Api\ReviewController::class, 'teacherReviews']);
+        // Compatibility: course-specific analytics route expected by frontend
+        Route::get('/teacher/courses/{id}/analytics', [\App\Http\Controllers\Api\Teacher\AnalyticsController::class, 'courseStats']);
             Route::get('/teacher/analytics', [AnalyticsController::class, 'index']);
+            Route::get('/teacher/students', [TeacherStudentController::class, 'index']);
+            Route::get('/teacher/students/{id}', [TeacherStudentController::class, 'show']);
+            Route::get('/teacher/earnings', [EarningsController::class, 'index']);
+            Route::get('/teacher/resources', [TeacherResourceController::class, 'index']);
+            // Teacher resources CRUD
+            Route::get('/teacher/courses/{courseId}/resources', [TeacherResourceController::class, 'index']);
+            Route::post('/teacher/courses/{courseId}/resources', [TeacherResourceController::class, 'store']);
+            Route::get('/teacher/resources/{id}', [TeacherResourceController::class, 'show']);
+            Route::put('/teacher/resources/{id}', [TeacherResourceController::class, 'update']);
+            Route::delete('/teacher/resources/{id}', [TeacherResourceController::class, 'destroy']);
+            // Teacher announcements
+            Route::get('/teacher/courses/{courseId}/announcements', [AnnouncementController::class, 'index']);
+            Route::post('/teacher/courses/{courseId}/announcements', [AnnouncementController::class, 'store']);
+            Route::get('/teacher/announcements/{id}', [AnnouncementController::class, 'show']);
+            Route::put('/teacher/announcements/{id}', [AnnouncementController::class, 'update']);
+            Route::delete('/teacher/announcements/{id}', [AnnouncementController::class, 'destroy']);
+            // Teacher discussions
+            Route::get('/teacher/courses/{courseId}/discussions', [TeacherDiscussionController::class, 'index']);
+            Route::post('/teacher/courses/{courseId}/discussions', [TeacherDiscussionController::class, 'store']);
+            Route::get('/teacher/discussions/{id}', [TeacherDiscussionController::class, 'show']);
+            Route::put('/teacher/discussions/{id}', [TeacherDiscussionController::class, 'update']);
+            Route::delete('/teacher/discussions/{id}', [TeacherDiscussionController::class, 'destroy']);
+            // Teacher assignment management
+            Route::get('/teacher/courses/{courseId}/assignments', [AssignmentController::class, 'index']);
+            Route::post('/teacher/courses/{courseId}/assignments', [AssignmentController::class, 'store']);
+            Route::get('/teacher/assignments/{id}', [AssignmentController::class, 'show']);
+            Route::put('/teacher/assignments/{id}', [AssignmentController::class, 'update']);
+            Route::delete('/teacher/assignments/{id}', [AssignmentController::class, 'destroy']);
     });
 
     Route::middleware('student')->group(function () {
@@ -196,5 +257,9 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/chat', 'index');
             Route::post('/chat', 'store');
         });
+
+        // Teacher chat endpoints
+        // Route::get('/teacher/chat', [\App\Http\Controllers\Api\ChatController::class, 'teacherIndex']);
+        // Route::post('/teacher/chat', [\App\Http\Controllers\Api\ChatController::class, 'teacherStore']);
     });
 });
