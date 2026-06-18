@@ -53,6 +53,10 @@ class ChatController extends Controller
             ->update([
                 'seen_at' => now()
             ]);
+            // broadcast(new MessageSeen(
+            //     $userId,
+            //     $request->user()->id
+            // ))->toOthers();
 
         return $this->successResponse(null, 'Messages marked as seen.');
     }

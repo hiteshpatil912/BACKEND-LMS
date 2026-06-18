@@ -26,7 +26,11 @@ use App\Http\Controllers\Api\StudentController;
 use App\Http\Controllers\Api\UploadController;
 use App\Http\Controllers\Api\WishlistController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Broadcast;
 
+Broadcast::routes([
+    'middleware' => ['auth:sanctum'],
+]);
 // routes/api.php
 Route::middleware('auth:sanctum')->get('/test-user', function (\Illuminate\Http\Request $request) {
     return response()->json([
