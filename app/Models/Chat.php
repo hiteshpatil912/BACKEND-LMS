@@ -13,8 +13,14 @@ class Chat extends Model
 
         'receiver_id',
 
-        'message'
+        'message',
 
+        'seen_at'
+
+    ];
+
+    protected $casts = [
+        'seen_at' => 'datetime',
     ];
    
       public function sender()

@@ -7,6 +7,8 @@ use App\Http\Requests\StoreChatRequest;
 use App\Models\Chat;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
+use App\Events\MessageSent;
+
 
 class ChatController extends Controller
 {
@@ -20,6 +22,13 @@ class ChatController extends Controller
                 ->latest()
                 ->get(),
         ]);
+        $chats = Chat::where('sender_id', $request->user()->id)
+            ->orWhere('receiver_id', $request->user()->id)
+            ->with('sender', 'receiver')
+            ->latest()
+            ->get();
+
+        return $this->successResponse(['chats' => $chats], 'Chats fetched successfully');
     }
 
     public function store(StoreChatRequest $request)
@@ -29,11 +38,23 @@ class ChatController extends Controller
             'receiver_id' => $request->receiver_id,
             'message' => $request->message,
         ]);
+        broadcast(new MessageSent($chat))->toOthers();
 
-        return response()->json([
-            'message' => 'Message Sent Successfully',
+        return $this->successResponse([
             'chat' => $chat,
-        ]);
+        ], 'Message Sent Successfully');
+    }
+
+    public function markAsSeen(Request $request, int $userId)
+    {
+        Chat::where('sender_id', $userId)
+            ->where('receiver_id', $request->user()->id)
+            ->whereNull('seen_at')
+            ->update([
+                'seen_at' => now()
+            ]);
+
+        return $this->successResponse(null, 'Messages marked as seen.');
     }
 
     /**
@@ -47,7 +68,7 @@ class ChatController extends Controller
             ->with('sender', 'receiver')
             ->latest('created_at')
             ->get();
-// dd($chats);
+
         return $this->successResponse([
             'chats' => $chats,
         ], 'Chats fetched successfully');
@@ -56,16 +77,18 @@ class ChatController extends Controller
     /**
      * Teacher: send chat message
      */
-    public function teacherStore(StoreChatRequest $request)
-    {
-        $chat = Chat::create([
-            'sender_id' => $request->user()->id,
-            'receiver_id' => $request->receiver_id,
-            'message' => $request->message,
-        ]);
+  public function teacherStore(StoreChatRequest $request)
+{
+    $chat = Chat::create([
+        'sender_id' => $request->user()->id,
+        'receiver_id' => $request->receiver_id,
+        'message' => $request->message,
+    ]);
 
-        return $this->successResponse([
-            'chat' => $chat,
-        ], 'Message sent successfully');
-    }
+    broadcast(new MessageSent($chat))->toOthers();
+
+    return $this->successResponse([
+        'chat' => $chat,
+    ], 'Message sent successfully');
+}
 }

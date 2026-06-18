@@ -27,6 +27,13 @@ use App\Http\Controllers\Api\UploadController;
 use App\Http\Controllers\Api\WishlistController;
 use Illuminate\Support\Facades\Route;
 
+// routes/api.php
+Route::middleware('auth:sanctum')->get('/test-user', function (\Illuminate\Http\Request $request) {
+    return response()->json([
+        'user' => $request->user(),
+    ]);
+});
+
 Route::controller(AuthController::class)->group(function () {
     Route::post('/register', 'register');
     Route::post('/login', 'login');
@@ -70,6 +77,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/notifications/{id}/read', 'markAsRead');
     });
 
+    Route::patch('/chat/{user}/seen', [ChatController::class, 'markAsSeen']);
+
     Route::controller(CourseController::class)->group(function () {
         Route::get('/courses', 'index');
         Route::get('/courses/{id}', 'show');
@@ -83,6 +92,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::prefix('admin')->controller(AdminController::class)->group(function () {
             Route::get('/users', 'users');
             Route::get('/reports', 'reports');
+            Route::get('/dashboard', 'dashboard');
         });
 
         Route::get('/admin/courses', [CourseController::class, 'index']);
@@ -257,9 +267,5 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/chat', 'index');
             Route::post('/chat', 'store');
         });
-
-        // Teacher chat endpoints
-        // Route::get('/teacher/chat', [\App\Http\Controllers\Api\ChatController::class, 'teacherIndex']);
-        // Route::post('/teacher/chat', [\App\Http\Controllers\Api\ChatController::class, 'teacherStore']);
     });
 });

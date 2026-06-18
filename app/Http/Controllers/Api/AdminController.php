@@ -32,6 +32,7 @@ class AdminController extends Controller
     public function reports()
     {
         return $this->successResponse([
+            
             'reports' => [
                 'total_users' => User::count(),
                 'total_courses' => Course::count(),
@@ -44,5 +45,18 @@ class AdminController extends Controller
                 'paid_revenue' => Order::where('payment_status', 'paid')->sum('amount'),
             ],
         ], 'Reports fetched successfully');
+    }
+
+    public function dashboard()
+    {
+        return $this->successResponse([
+            'dashboard' => [
+                'total_users' => User::count(),
+                'total_students' => User::where('role', 'student')->count(),
+                'total_teachers' => User::where('role', 'teacher')->count(),
+                'total_courses' => Course::count(),
+                'total_revenue' => Order::where('payment_status', 'paid')->sum('amount'),
+            ],
+        ], 'Admin dashboard fetched successfully');
     }
 }
