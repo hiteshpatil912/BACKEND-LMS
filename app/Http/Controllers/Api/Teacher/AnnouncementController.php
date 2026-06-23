@@ -9,6 +9,8 @@ use App\Models\Course;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use App\Models\Notification;
+use App\Events\NotificationCreated;
 
 class AnnouncementController extends Controller
 {
@@ -46,6 +48,19 @@ class AnnouncementController extends Controller
         ]);
 
         $announcement = Announcement::create(array_merge($validated, ['course_id' => $courseId]));
+
+        event(new \App\Events\AnnouncementCreated($announcement));
+        // Notify all enrolled students
+        foreach ($course->students as $student) {
+
+            $notification = Notification::create([
+                'user_id' => $student->id,
+                'title' => '📢 New Announcement',
+                'message' => $announcement->title,
+            ]);
+
+            event(new NotificationCreated($notification));
+        }
 
         return $this->successResponse(['announcement' => $announcement], 'Announcement created successfully', 201);
     }

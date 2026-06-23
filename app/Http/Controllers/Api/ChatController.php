@@ -8,6 +8,8 @@ use App\Models\Chat;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use App\Events\MessageSent;
+use App\Events\TypingStarted;
+use App\Events\TypingStopped;
 
 
 class ChatController extends Controller
@@ -38,7 +40,8 @@ class ChatController extends Controller
             'receiver_id' => $request->receiver_id,
             'message' => $request->message,
         ]);
-        broadcast(new MessageSent($chat))->toOthers();
+        // broadcast(new MessageSent($chat))->toOthers();
+        broadcast(new MessageSent($chat));
 
         return $this->successResponse([
             'chat' => $chat,
@@ -47,20 +50,27 @@ class ChatController extends Controller
 
     public function markAsSeen(Request $request, int $userId)
     {
-        Chat::where('sender_id', $userId)
+        $messages = Chat::where('sender_id', $userId)
             ->where('receiver_id', $request->user()->id)
             ->whereNull('seen_at')
-            ->update([
-                'seen_at' => now()
-            ]);
-            // broadcast(new MessageSeen(
-            //     $userId,
-            //     $request->user()->id
-            // ))->toOthers();
+            ->get();
+
+        foreach ($messages as $message) {
+
+            $message->seen_at = now();
+            $message->save();
+
+            broadcast(
+                new \App\Events\MessageSeen(
+                    $message->id,
+                    $message->seen_at,
+                    $message->sender_id
+                )
+            )->toOthers();
+        }
 
         return $this->successResponse(null, 'Messages marked as seen.');
     }
-
     /**
      * Teacher: list chats for authenticated teacher
      */
@@ -81,18 +91,45 @@ class ChatController extends Controller
     /**
      * Teacher: send chat message
      */
-  public function teacherStore(StoreChatRequest $request)
-{
-    $chat = Chat::create([
-        'sender_id' => $request->user()->id,
-        'receiver_id' => $request->receiver_id,
-        'message' => $request->message,
-    ]);
+    public function teacherStore(StoreChatRequest $request)
+    {
+        $chat = Chat::create([
+            'sender_id' => $request->user()->id,
+            'receiver_id' => $request->receiver_id,
+            'message' => $request->message,
+        ]);
 
-    broadcast(new MessageSent($chat))->toOthers();
+        broadcast(new MessageSent($chat))->toOthers();
 
-    return $this->successResponse([
-        'chat' => $chat,
-    ], 'Message sent successfully');
-}
+        return $this->successResponse([
+            'chat' => $chat,
+        ], 'Message sent successfully');
+    }
+    public function typingStarted(Request $request)
+    {
+        broadcast(
+            new TypingStarted(
+                $request->user()->id,
+                $request->receiver_id
+            )
+        )->toOthers();
+
+        return response()->json([
+            'success' => true,
+        ]);
+    }
+
+    public function typingStopped(Request $request)
+    {
+        broadcast(
+            new TypingStopped(
+                $request->user()->id,
+                $request->receiver_id
+            )
+        )->toOthers();
+
+        return response()->json([
+            'success' => true,
+        ]);
+    }
 }

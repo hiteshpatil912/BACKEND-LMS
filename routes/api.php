@@ -83,6 +83,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::patch('/chat/{user}/seen', [ChatController::class, 'markAsSeen']);
 
+    
     Route::controller(CourseController::class)->group(function () {
         Route::get('/courses', 'index');
         Route::get('/courses/{id}', 'show');
@@ -118,12 +119,6 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::put('/courses/{id}', 'update');
             Route::delete('/courses/{id}', 'destroy');
         });
-
-
-    Route::get('/teacher/chat', [ChatController::class, 'teacherIndex']);
-    Route::post('/teacher/chat', [ChatController::class, 'teacherStore']);
-
-
         // Compatibility: teacher-prefixed route for enrolled students
         Route::get('/teacher/courses/{id}/students', [CourseController::class, 'enrolledStudents']);
 
@@ -195,6 +190,11 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/teacher/assignments/{id}', [AssignmentController::class, 'show']);
             Route::put('/teacher/assignments/{id}', [AssignmentController::class, 'update']);
             Route::delete('/teacher/assignments/{id}', [AssignmentController::class, 'destroy']);
+            Route::get('/teacher/chat', [ChatController::class, 'teacherIndex']);
+            Route::post('/teacher/chat', [ChatController::class, 'teacherStore']);
+            Route::patch('/teacher/chat/{user}/seen', [ChatController::class, 'markAsSeen']);
+            Route::post('/teacher/chat/typing-started', [ChatController::class, 'typingStarted']);
+            Route::post('/teacher/chat/typing-stopped', [ChatController::class, 'typingStopped']);
     });
 
     Route::middleware('student')->group(function () {
@@ -237,7 +237,9 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/my-wishlist', 'myWishlist');
         });
 
-        
+  
+      
+       
 
         Route::prefix('student')->controller(StudentController::class)->group(function () {
             Route::get('/dashboard', 'dashboard');
@@ -267,9 +269,17 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('/chat/discussions', 'chatDiscussion');
         });
 
-        Route::prefix('student')->controller(ChatController::class)->group(function () {
+      Route::prefix('student')->controller(ChatController::class)->group(function () {
+
             Route::get('/chat', 'index');
             Route::post('/chat', 'store');
+
+            // ✅ FIX
+            Route::patch('/chat/{user}/seen', 'markAsSeen');
+
+            Route::post('/chat/typing-started', 'typingStarted');
+            Route::post('/chat/typing-stopped', 'typingStopped');
+
         });
     });
 });

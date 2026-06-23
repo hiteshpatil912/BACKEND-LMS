@@ -14,6 +14,10 @@ class MessageSent implements ShouldBroadcastNow
 
     public function __construct(public $chat)
     {
+        \Log::info('🔥 MessageSent Event Fired', [
+        'sender' => $chat->sender_id,
+        'receiver' => $chat->receiver_id,
+    ]);
     }
 
     public function broadcastOn(): array

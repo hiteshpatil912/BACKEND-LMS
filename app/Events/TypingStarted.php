@@ -8,33 +8,31 @@ use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Broadcasting\InteractsWithSockets;
 
-class MessageSeen implements ShouldBroadcastNow
+class TypingStarted implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public function __construct(
-        public int $messageId,
-        public string $seenAt,
-        public int $ownerId
+        public int $senderId,
+        public int $receiverId
     ) {}
 
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel('chat.' . $this->ownerId),
+            new PrivateChannel('chat.' . $this->receiverId),
         ];
     }
 
     public function broadcastAs(): string
     {
-        return 'message.seen';
+        return 'typing.started';
     }
 
     public function broadcastWith(): array
     {
         return [
-            'message_id' => $this->messageId,
-            'seen_at' => $this->seenAt,
+            'sender_id' => $this->senderId,
         ];
     }
 }
