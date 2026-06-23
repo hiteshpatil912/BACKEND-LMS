@@ -10,6 +10,8 @@ use Illuminate\Http\Request;
 use App\Events\MessageSent;
 use App\Events\TypingStarted;
 use App\Events\TypingStopped;
+use App\Models\Notification;
+use App\Events\NotificationCreated;
 
 
 class ChatController extends Controller
@@ -35,17 +37,27 @@ class ChatController extends Controller
 
     public function store(StoreChatRequest $request)
     {
+        dd('CHAT CONTROLLER HIT');
         $chat = Chat::create([
             'sender_id' => $request->user()->id,
             'receiver_id' => $request->receiver_id,
             'message' => $request->message,
         ]);
+
         // broadcast(new MessageSent($chat))->toOthers();
         broadcast(new MessageSent($chat));
+                
+        $notification = Notification::create([
+            'user_id' => $request->receiver_id,
+            'title' => 'New Message',
+            'message' => $request->user()->name . ': ' . $request->message,
+        ]);
 
-        return $this->successResponse([
-            'chat' => $chat,
-        ], 'Message Sent Successfully');
+        broadcast(new NotificationCreated($notification));
+
+                return $this->successResponse([
+                    'chat' => $chat,
+                ], 'Message Sent Successfully');
     }
 
     public function markAsSeen(Request $request, int $userId)
@@ -91,20 +103,28 @@ class ChatController extends Controller
     /**
      * Teacher: send chat message
      */
-    public function teacherStore(StoreChatRequest $request)
-    {
-        $chat = Chat::create([
-            'sender_id' => $request->user()->id,
-            'receiver_id' => $request->receiver_id,
-            'message' => $request->message,
-        ]);
+public function teacherStore(StoreChatRequest $request)
+{
+    $chat = Chat::create([
+        'sender_id' => $request->user()->id,
+        'receiver_id' => $request->receiver_id,
+        'message' => $request->message,
+    ]);
 
-        broadcast(new MessageSent($chat))->toOthers();
+    broadcast(new MessageSent($chat))->toOthers();
 
-        return $this->successResponse([
-            'chat' => $chat,
-        ], 'Message sent successfully');
-    }
+    $notification = Notification::create([
+        'user_id' => $request->receiver_id,
+        'title' => 'New Message',
+        'message' => $request->user()->name . ': ' . $request->message,
+    ]);
+
+    broadcast(new NotificationCreated($notification));
+
+    return $this->successResponse([
+        'chat' => $chat,
+    ], 'Message sent successfully');
+}
     public function typingStarted(Request $request)
     {
         broadcast(
