@@ -37,8 +37,14 @@ class ChatController extends Controller
 
     public function store(StoreChatRequest $request)
     {
-        dd('CHAT CONTROLLER HIT');
-        $chat = Chat::create([
+         \Log::info('STUDENT CHAT HIT', [
+        'user' => auth()->id(),
+        'receiver' => $request->receiver_id,
+        'message' => $request->message,
+    ]);
+
+//  dd('CHAT CONTROLLER HIT');
+         $chat = Chat::create([
             'sender_id' => $request->user()->id,
             'receiver_id' => $request->receiver_id,
             'message' => $request->message,
